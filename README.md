@@ -1,2 +1,2 @@
-Automated circuit discovery notebooks
-\n Please run these notebooks in Collab
+Automated circuit discovery notebooks  
+Please run these notebooks in Collab
