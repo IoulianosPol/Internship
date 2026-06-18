@@ -198,7 +198,6 @@ def parse_args():
     args = parser.parse_args(
         [line.strip() for line in r"""--task=induction\
 --threshold=0.5623\
---zero-ablation\
 --indices-mode=reverse\
 --first-cache-cpu=True\
 --second-cache-cpu=True\
