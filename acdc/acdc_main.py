@@ -10,11 +10,20 @@ import wandb
 import huggingface_hub
 import networkx as nx
 import matplotlib.pyplot as plt
-from acdc.acdc_graphics import show
-
+import IPython
+from IPython.display import Image, display
+from tqdm import tqdm
+import torch.nn as nn
+import torch.optim as optim
+import numpy as np
+import einops
+import yaml
+import plotly.express as px
+import plotly.io as pio
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 from functools import partial
 
-# --- Bypasses & Fixes ---
 hf_cache_dir = os.environ.get("HF_HOME", os.path.join(os.getcwd(), "hf_cache"))
 os.makedirs(hf_cache_dir, exist_ok=True)
 transformers.TRANSFORMERS_CACHE = hf_cache_dir
@@ -44,46 +53,8 @@ dummy_torchtyping.TensorType = DummyTensorType()
 dummy_torchtyping.patch_typeguard = lambda *args, **kwargs: None
 sys.modules["torchtyping"] = dummy_torchtyping
 
-from transformer_lens.HookedTransformer import HookedTransformer
-
-try:
-    from acdc.tracr_task.utils import get_all_tracr_things
-except Exception as e:
-    print(f"Could not import `tracr` because {e}; tracr tasks will be unavailable.")
-
-from acdc.docstring.utils import get_all_docstring_things
-from acdc.acdc_utils import reset_network, shuffle_tensor, ct, MatchNLLMetric, kl_divergence, negative_log_probs
-from acdc.TLACDCExperiment import TLACDCExperiment
-from acdc.ioi.utils import get_all_ioi_things
-from acdc.greaterthan.utils import get_all_greaterthan_things
-from acdc.acdc_graphics import show
-from acdc.docstring.utils import AllDataThings
-import wandb
-import IPython
-from IPython.display import Image, display
-import torch
-import gc
-from tqdm import tqdm
-import networkx as nx
-import huggingface_hub
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-import numpy as np
-import einops
-import yaml
-from transformers import AutoModelForCausalLM, AutoConfig, AutoTokenizer
-
-import matplotlib.pyplot as plt
-import plotly.express as px
-import plotly.io as pio
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
-
 from transformer_lens.hook_points import HookedRootModule, HookPoint
-from transformer_lens.HookedTransformer import (
-    HookedTransformer,
-)
+from transformer_lens.HookedTransformer import HookedTransformer
 
 try:
     from acdc.tracr_task.utils import (
@@ -93,29 +64,24 @@ try:
 except Exception as e:
     print(f"Could not import `tracr` because {e}; the rest of the file should work but you cannot use the tracr tasks")
 
-from acdc.docstring.utils import get_all_docstring_things
+from acdc.docstring.utils import get_all_docstring_things, AllDataThings
 from acdc.acdc_utils import (
-    make_nd_dict,
     reset_network,
     shuffle_tensor,
-    cleanup,
     ct,
+    MatchNLLMetric,
+    kl_divergence,
+    negative_log_probs,
+    make_nd_dict,
+    cleanup,
     TorchIndex,
     Edge,
     EdgeType,
-)  # these introduce several important classes !!!
-
+)
 from acdc.TLACDCCorrespondence import TLACDCCorrespondence
 from acdc.TLACDCInterpNode import TLACDCInterpNode
 from acdc.TLACDCExperiment import TLACDCExperiment
-
-from acdc.acdc_utils import (
-    kl_divergence,
-)
-from acdc.ioi.utils import (
-    get_all_ioi_things,
-    get_gpt2_small,
-)
+from acdc.ioi.utils import get_all_ioi_things, get_gpt2_small
 from acdc.induction.utils import (
     get_all_induction_things,
     get_validation_data,
@@ -124,10 +90,7 @@ from acdc.induction.utils import (
     get_model
 )
 from acdc.greaterthan.utils import get_all_greaterthan_things
-from acdc.acdc_graphics import (
-    build_colorscheme,
-    show,
-)
+from acdc.acdc_graphics import show, build_colorscheme
 
 torch.autograd.set_grad_enabled(False)
 print("Environment setup successfully.")
