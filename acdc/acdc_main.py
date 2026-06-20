@@ -10,6 +10,8 @@ import wandb
 import huggingface_hub
 import networkx as nx
 import matplotlib.pyplot as plt
+from acdc.acdc_graphics import show
+
 from functools import partial
 
 # --- Bypasses & Fixes ---
@@ -56,6 +58,76 @@ from acdc.ioi.utils import get_all_ioi_things
 from acdc.greaterthan.utils import get_all_greaterthan_things
 from acdc.acdc_graphics import show
 from acdc.docstring.utils import AllDataThings
+import wandb
+import IPython
+from IPython.display import Image, display
+import torch
+import gc
+from tqdm import tqdm
+import networkx as nx
+import huggingface_hub
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+import numpy as np
+import einops
+import yaml
+from transformers import AutoModelForCausalLM, AutoConfig, AutoTokenizer
+
+import matplotlib.pyplot as plt
+import plotly.express as px
+import plotly.io as pio
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+
+from transformer_lens.hook_points import HookedRootModule, HookPoint
+from transformer_lens.HookedTransformer import (
+    HookedTransformer,
+)
+
+try:
+    from acdc.tracr_task.utils import (
+        get_all_tracr_things,
+        get_tracr_model_input_and_tl_model,
+    )
+except Exception as e:
+    print(f"Could not import `tracr` because {e}; the rest of the file should work but you cannot use the tracr tasks")
+
+from acdc.docstring.utils import get_all_docstring_things
+from acdc.acdc_utils import (
+    make_nd_dict,
+    reset_network,
+    shuffle_tensor,
+    cleanup,
+    ct,
+    TorchIndex,
+    Edge,
+    EdgeType,
+)  # these introduce several important classes !!!
+
+from acdc.TLACDCCorrespondence import TLACDCCorrespondence
+from acdc.TLACDCInterpNode import TLACDCInterpNode
+from acdc.TLACDCExperiment import TLACDCExperiment
+
+from acdc.acdc_utils import (
+    kl_divergence,
+)
+from acdc.ioi.utils import (
+    get_all_ioi_things,
+    get_gpt2_small,
+)
+from acdc.induction.utils import (
+    get_all_induction_things,
+    get_validation_data,
+    get_good_induction_candidates,
+    get_mask_repeat_candidates,
+    get_model
+)
+from acdc.greaterthan.utils import get_all_greaterthan_things
+from acdc.acdc_graphics import (
+    build_colorscheme,
+    show,
+)
 
 torch.autograd.set_grad_enabled(False)
 print("Environment setup successfully.")
@@ -197,7 +269,7 @@ def parse_args():
     # HARDCODED ARGS OVRERRIDE (Όπως στο notebook)
     args = parser.parse_args(
         [line.strip() for line in r"""--task=induction\
---threshold=0.5623\
+--threshold=0.8\
 --indices-mode=reverse\
 --first-cache-cpu=True\
 --second-cache-cpu=True\
@@ -284,9 +356,84 @@ def main():
         show_full_index=use_pos_embed,
     )
 
+    # Instead of reloading the data, we extract it directly
+    # from the 'things' object prepared by ACDC.
+    # val_data contains the texts in numerical format (token IDs).
+    val_data = things.validation_data
+    # mask is a boolean array (True/False).
+    # True means: "This token is the [B] in a pattern [A][B]...[A][B]".
+    mask = things.validation_mask
+
+    # Loop through all 10 (or the specified number of) prompts
+    for prompt_idx in range(len(val_data)):
+        # Get the list of token IDs for the specific prompt
+        prompt_tokens = val_data[prompt_idx]
+        # Convert the numbers (token IDs) back into readable text
+        prompt_text = tl_model.to_string(prompt_tokens)
+
+        print("\n" + "=" * 60)
+        print(f"--- Real Text (Prompt {prompt_idx}) ---")
+        print(prompt_text)
+
+        print(f"\n--- Induction Targets (Mask) for Prompt {prompt_idx} ---")
+
+        # Counter to track how many induction tokens were found
+        induction_count = 0
+        # zip() pairs each token_id with its corresponding True/False value from the mask.
+        # enumerate() gives us the position (index 'i') of this token within the text.
+        for i, (token_id, is_induction_target) in enumerate(zip(prompt_tokens, mask[prompt_idx])):
+            if is_induction_target:
+                # If the mask at this position is True (meaning we expect the model to copy)
+                print(f"Position {i}: The model was expected to predict token '{tl_model.to_string(token_id)}'")
+                induction_count += 1
+
+        if induction_count == 0:
+            # If the text had no repeating patterns at all
+            print("No repeating induction patterns were found in this prompt.")
+
+    print("Model:")
+    print(tl_model.cfg)
     print("Initial Edges:", exp.count_no_edges())
+    all_nodes = [
+        node
+        for receiver_dict in exp.corr.graph.values()
+        for node in receiver_dict.values()
+    ]
+
+    print("Initial Nodes:", len(all_nodes))
+    print("-" * 50)
+    print(exp.corr.nodes())
+    print("Initial connections")
+    for edge_tuple, edge in exp.corr.all_edges().items():
+        if edge.present and edge.edge_type != EdgeType.PLACEHOLDER:
+            receiver_name, receiver_idx, sender_name, sender_idx = edge_tuple
+
+            rec_str = f"{receiver_name} {receiver_idx.hashable_tuple}"
+            send_str = f"{sender_name} {sender_idx.hashable_tuple}"
+
+            print(f"From: {send_str}  --->  To: {rec_str}")
     show(exp.corr, "ims/initial_full_network.png", show_full_index=False)
     print("Saved initial network image to ims/initial_full_network.png")
+
+    print("Initial Graph")
+
+    corr = TLACDCCorrespondence.setup_from_model(tl_model, use_pos_embed=False)
+
+    for (recv_name, recv_idx, send_name, send_idx), edge in corr.all_edges().items():
+        if edge.present:
+            edge.effect_size = 1.0
+
+    fname = "ims/official_acdc_114.png"
+    show(
+        correspondence=corr,
+        fname=fname,
+        show_full_index=False,
+        remove_qkv=False,
+        show_placeholders=False,
+
+    )
+
+    display(Image(fname))
 
     exp_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     last_edge_count = exp.count_no_edges()
@@ -296,9 +443,9 @@ def main():
         current_edge_count = exp.count_no_edges()
 
         if current_edge_count < last_edge_count:
-            print(f"Edge removed! New set: {current_edge_count}")
-            fname = f"ims/img_pruned_{i + 1}.png"
-            show(exp.corr, fname=fname, show_full_index=False)
+            #print(f"Edge removed! New set: {current_edge_count}")
+            #fname = f"ims/img_pruned_{i + 1}.png"
+            #show(exp.corr, fname=fname, show_full_index=False)
             last_edge_count = current_edge_count
 
         print(f"Epoch {i} | Edges remaining: {current_edge_count}")
