@@ -234,8 +234,9 @@ def parse_args():
         [line.strip() for line in r"""--task=induction\
 --threshold=0.8\
 --indices-mode=reverse\
---first-cache-cpu=True\
---second-cache-cpu=True\
+--first-cache-cpu=False\
+--second-cache-cpu=False\
+--torch-num-threads=32\
 --max-num-epochs=100000""".split("\\\n")]
     )
 
@@ -263,7 +264,7 @@ def main():
     if TASK == "ioi":
         things = get_all_ioi_things(num_examples=40, device=args.device, metric_name=args.metric)
     elif TASK == "induction":
-        things = get_all_induction_things(num_examples=2, seq_len=300, device=args.device, metric=args.metric)
+        things = get_all_induction_things(num_examples=10, seq_len=300, device=args.device, metric=args.metric)
     elif TASK == "docstring":
         things = get_all_docstring_things(num_examples=50, seq_len=41, device=args.device, metric_name=args.metric,
                                           correct_incorrect_wandb=True)
