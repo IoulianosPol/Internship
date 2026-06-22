@@ -10,8 +10,6 @@ import wandb
 import huggingface_hub
 import networkx as nx
 import matplotlib.pyplot as plt
-import IPython
-from IPython.display import Image, display
 from tqdm import tqdm
 import torch.nn as nn
 import torch.optim as optim
@@ -229,7 +227,7 @@ def parse_args():
     parser.add_argument('--single-step', action='store_true')
     parser.add_argument("--abs-value-threshold", action='store_true')
 
-    # HARDCODED ARGS OVRERRIDE (Όπως στο notebook)
+    # HARDCODED ARGS OVERRIDE
     args = parser.parse_args(
         [line.strip() for line in r"""--task=induction\
 --threshold=0.8\
@@ -239,7 +237,6 @@ def parse_args():
 --torch-num-threads=32\
 --max-num-epochs=100000""".split("\\\n")]
     )
-
     return args
 
 
@@ -320,39 +317,25 @@ def main():
         show_full_index=use_pos_embed,
     )
 
-    # Instead of reloading the data, we extract it directly
-    # from the 'things' object prepared by ACDC.
-    # val_data contains the texts in numerical format (token IDs).
     val_data = things.validation_data
-    # mask is a boolean array (True/False).
-    # True means: "This token is the [B] in a pattern [A][B]...[A][B]".
     mask = things.validation_mask
 
-    # Loop through all 10 (or the specified number of) prompts
     for prompt_idx in range(len(val_data)):
-        # Get the list of token IDs for the specific prompt
         prompt_tokens = val_data[prompt_idx]
-        # Convert the numbers (token IDs) back into readable text
         prompt_text = tl_model.to_string(prompt_tokens)
 
         print("\n" + "=" * 60)
         print(f"--- Real Text (Prompt {prompt_idx}) ---")
         print(prompt_text)
-
         print(f"\n--- Induction Targets (Mask) for Prompt {prompt_idx} ---")
 
-        # Counter to track how many induction tokens were found
         induction_count = 0
-        # zip() pairs each token_id with its corresponding True/False value from the mask.
-        # enumerate() gives us the position (index 'i') of this token within the text.
         for i, (token_id, is_induction_target) in enumerate(zip(prompt_tokens, mask[prompt_idx])):
             if is_induction_target:
-                # If the mask at this position is True (meaning we expect the model to copy)
                 print(f"Position {i}: The model was expected to predict token '{tl_model.to_string(token_id)}'")
                 induction_count += 1
 
         if induction_count == 0:
-            # If the text had no repeating patterns at all
             print("No repeating induction patterns were found in this prompt.")
 
     print("Model:")
@@ -366,20 +349,16 @@ def main():
 
     print("Initial Nodes:", len(all_nodes))
     print("-" * 50)
-    print(exp.corr.nodes())
     print("Initial connections")
     for edge_tuple, edge in exp.corr.all_edges().items():
         if edge.present and edge.edge_type != EdgeType.PLACEHOLDER:
             receiver_name, receiver_idx, sender_name, sender_idx = edge_tuple
-
             rec_str = f"{receiver_name} {receiver_idx.hashable_tuple}"
             send_str = f"{sender_name} {sender_idx.hashable_tuple}"
-
             print(f"From: {send_str}  --->  To: {rec_str}")
+
     show(exp.corr, "ims/initial_full_network.png", show_full_index=False)
     print("Saved initial network image to ims/initial_full_network.png")
-
-    print("Initial Graph")
 
     corr = TLACDCCorrespondence.setup_from_model(tl_model, use_pos_embed=False)
 
@@ -394,10 +373,8 @@ def main():
         show_full_index=False,
         remove_qkv=False,
         show_placeholders=False,
-
     )
 
-    display(Image(fname))
 
     exp_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     last_edge_count = exp.count_no_edges()
@@ -407,12 +384,14 @@ def main():
         current_edge_count = exp.count_no_edges()
 
         if current_edge_count < last_edge_count:
-            #print(f"Edge removed! New set: {current_edge_count}")
-            #fname = f"ims/img_pruned_{i + 1}.png"
-            #show(exp.corr, fname=fname, show_full_index=False)
             last_edge_count = current_edge_count
 
         print(f"Epoch {i} | Edges remaining: {current_edge_count}")
+
+        # Checkpoint
+        if i % 100 == 0 and i > 0:
+            print(f"Saving checkpoint at epoch {i}...")
+            exp.save_edges("edges_checkpoint.pkl")
 
         if i == 0:
             exp.save_edges("edges.pkl")
