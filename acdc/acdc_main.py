@@ -316,7 +316,7 @@ def main():
         remove_redundant=False,
         show_full_index=use_pos_embed,
     )
-
+    print(f"Using device:{args.device}")
     val_data = things.validation_data
     mask = things.validation_mask
 
