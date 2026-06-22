@@ -261,7 +261,7 @@ def main():
     if TASK == "ioi":
         things = get_all_ioi_things(num_examples=40, device=args.device, metric_name=args.metric)
     elif TASK == "induction":
-        things = get_all_induction_things(num_examples=10, seq_len=300, device=args.device, metric=args.metric)
+        things = get_all_induction_things(num_examples=5, seq_len=300, device=args.device, metric=args.metric)
     elif TASK == "docstring":
         things = get_all_docstring_things(num_examples=50, seq_len=41, device=args.device, metric_name=args.metric,
                                           correct_incorrect_wandb=True)
@@ -357,7 +357,7 @@ def main():
             send_str = f"{sender_name} {sender_idx.hashable_tuple}"
             print(f"From: {send_str}  --->  To: {rec_str}")
 
-    show(exp.corr, "ims/initial_full_network.png", show_full_index=False)
+    #show(exp.corr, "ims/initial_full_network.png", show_full_index=False)
     print("Saved initial network image to ims/initial_full_network.png")
 
     corr = TLACDCCorrespondence.setup_from_model(tl_model, use_pos_embed=False)
@@ -397,8 +397,14 @@ def main():
             exp.save_edges("edges.pkl")
 
         if exp.current_node is None or args.single_step:
-            show(exp.corr, f"ims/ACDC_img_{exp_time}.png")
-            print(f"Finished. Final graph saved to ims/ACDC_img_{exp_time}.png")
+            # show(exp.corr, f"ims/ACDC_img_{exp_time}.png")
+            # print(f"Finished. Final graph saved to ims/ACDC_img_{exp_time}.png")
+            # break
+            try:
+                show(exp.corr, f"ims/ACDC_img_{exp_time}.png")
+                print(f"Finished. Final graph saved to ims/ACDC_img_{exp_time}.png")
+            except Exception as e:
+                print(f"Finished, but could not save final graph image due to: {e}")
             break
 
     if args.using_wandb:
