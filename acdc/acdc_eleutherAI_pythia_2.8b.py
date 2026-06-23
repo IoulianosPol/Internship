@@ -305,7 +305,7 @@ def main():
     if TASK == "ioi":
         things = get_all_ioi_things(num_examples=40, device=args.device, metric_name=args.metric)
     elif TASK == "induction":
-        things = get_all_induction_things(num_examples=10, seq_len=300, device=args.device, metric=args.metric)
+        things = get_all_induction_things(num_examples=2, seq_len=50, device=args.device, metric=args.metric)
     elif TASK == "docstring":
         things = get_all_docstring_things(num_examples=50, seq_len=41, device=args.device, metric_name=args.metric,
                                           correct_incorrect_wandb=True)
