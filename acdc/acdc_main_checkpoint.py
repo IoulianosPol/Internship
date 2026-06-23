@@ -377,8 +377,10 @@ def main():
         sys.exit(0)
 
     signal.signal(signal.SIGTERM, handle_sigterm)
-
+    print("Ready to enter main loop")
     for i in range(start_epoch, args.max_num_epochs):
+        print("Start of main loop:")
+        print("Epoch:", i)
         current_loop_epoch = i
 
         exp.step(testing=False)
