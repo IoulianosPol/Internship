@@ -396,7 +396,7 @@ def main():
 
         if exp.current_node is None or args.single_step:
             try:
-                show(exp.corr, f"ims/ACDC_img_{exp_time}.png")
+                show(exp.corr, f"ims/ACDC_img_{exp_time}.png",show_full_index=False)
                 print(f"Finished. Final graph saved to ims/ACDC_img_{exp_time}.png")
             except Exception as e:
                 print(f"Finished, but could not save final graph image due to: {e}")
