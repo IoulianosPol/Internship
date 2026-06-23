@@ -264,7 +264,7 @@ def parse_args():
 
     args = parser.parse_args(
         [line.strip() for line in r"""--task=induction\
---threshold=0.8\
+--threshold=0.5623\
 --indices-mode=reverse\
 --first-cache-cpu=False\
 --second-cache-cpu=False\
