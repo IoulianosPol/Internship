@@ -134,7 +134,7 @@ def get_model(device):
         center_writing_weights=False,
         center_unembed=False,
         fold_ln=False,
-        dtype=torch.float16,
+        dtype=torch.bfloat16,
         device=device,
     )
     tl_model.set_use_attn_result(True)
