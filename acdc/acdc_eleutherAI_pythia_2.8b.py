@@ -364,6 +364,44 @@ def main():
     print("Model:")
     print(tl_model.cfg)
 
+    # print("\n" + "=" * 50)
+    # print("Initial Edges:", exp.count_no_edges())
+    # all_nodes = [
+    #     node
+    #     for receiver_dict in exp.corr.graph.values()
+    #     for node in receiver_dict.values()
+    # ]
+    # print("Initial Nodes:", len(all_nodes))
+    # print("-" * 50)
+    # print("Initial connections:")
+    # for edge_tuple, edge in exp.corr.all_edges().items():
+    #     if edge.present and edge.edge_type != EdgeType.PLACEHOLDER:
+    #         receiver_name, receiver_idx, sender_name, sender_idx = edge_tuple
+    #
+    #         rec_str = f"{receiver_name} {receiver_idx.hashable_tuple}"
+    #         send_str = f"{sender_name} {sender_idx.hashable_tuple}"
+    #
+    #         print(f"From: {send_str}  --->  To: {rec_str}")
+    #
+    # print("\nSaving Initial Graph Image...")
+    # initial_graph_fname = f"ims/initial_acdc_graph_{TASK}.png"
+    # try:
+    #     # We temporarily set effect sizes to 1.0 just for plotting, similar to the notebook logic
+    #     for edge_tuple, edge in exp.corr.all_edges().items():
+    #         if edge.present:
+    #             edge.effect_size = 1.0
+    #
+    #     show(
+    #         correspondence=exp.corr,
+    #         fname=initial_graph_fname,
+    #         show_full_index=False,
+    #         remove_qkv=False,
+    #         show_placeholders=False,
+    #     )
+    #     print(f"Initial Graph saved successfully to: {initial_graph_fname}")
+    # except Exception as e:
+    #     print(f"Could not save initial graph image due to: {e}")
+    # print("=" * 50 + "\n")
     # ---------------------------------------------------------
     # RESUME LOGIC
     # ---------------------------------------------------------
