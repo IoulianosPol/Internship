@@ -461,7 +461,34 @@ def main():
         wandb.finish()
 
     exp.save_subgraph(return_it=True)
+    active_nodes = [n for n in exp.corr.nodes() if len(n.parents) > 0 or len(n.children) > 0]
 
+    print(f"--- List of {len(active_nodes)} active nodes ---\n")
+
+    for n in active_nodes:
+        print(f"Node: {n.name} | Index: {n.index.hashable_tuple}")
+
+        if len(n.parents) > 0:
+            print("  <-- Parents (Receives input from):")
+            for parent in n.parents:
+                print(f"      - {parent.name} | Index: {parent.index.hashable_tuple}")
+        else:
+            print("  <-- Parents: None")
+
+        if len(n.children) > 0:
+            print("  --> Children (Sends output to):")
+            for child in n.children:
+                print(f"      - {child.name} | Index: {child.index.hashable_tuple}")
+        else:
+            print("  --> Children: None")
+
+        print("-" * 60)
+    active_nodes = [n for n in exp.corr.nodes() if len(n.parents) > 0 or len(n.children) > 0]
+
+    print(f"--- List of {len(active_nodes)} active nodes ---")
+
+    for n in active_nodes:
+        print(f"Node: {n.name} | Index: {n.index.hashable_tuple}")
 
 if __name__ == "__main__":
     main()
