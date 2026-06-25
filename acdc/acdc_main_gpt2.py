@@ -393,56 +393,56 @@ def main():
         print(f"Could not save initial graph image due to: {e}")
     print("=" * 50 + "\n")
 
-    # # ---------------------------------------------------------
-    # # RESUME LOGIC
-    # # ---------------------------------------------------------
-    # start_epoch = load_custom_checkpoint(exp)
-    #
-    # print("\nStarting ACDC Loop...")
-    # exp_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    # last_edge_count = exp.count_no_edges()
-    #
-    # # ---------------------------------------------------------
-    # # EMERGENCY SHUTDOWN SIGNAL HANDLER
-    # # ---------------------------------------------------------
-    # global current_loop_epoch
-    # current_loop_epoch = start_epoch
-    #
-    # def handle_sigterm(signum, frame):
-    #     print(
-    #         f"\n[WARNING] Received SLURM termination signal (Timeout approaching). Saving emergency checkpoint at epoch {current_loop_epoch}...")
-    #     save_custom_checkpoint(exp, current_loop_epoch)
-    #     print("Exiting gracefully. Run me again to resume!")
-    #     sys.exit(0)
-    #
-    # signal.signal(signal.SIGTERM, handle_sigterm)
-    # print("Ready to enter main loop")
-    # for i in range(start_epoch, args.max_num_epochs):
-    #     print("Start of main loop:")
-    #     print("Epoch:", i)
-    #     current_loop_epoch = i
-    #
-    #     exp.step(testing=False)
-    #     current_edge_count = exp.count_no_edges()
-    #
-    #     if current_edge_count < last_edge_count:
-    #         last_edge_count = current_edge_count
-    #
-    #     print(f"Epoch {i} | Edges remaining: {current_edge_count}")
-    #
-    #     if i % 100 == 0 and i > 0:
-    #         save_custom_checkpoint(exp, i)
-    #
-    #     if exp.current_node is None or args.single_step:
-    #         try:
-    #             show(exp.corr, f"ims/ACDC_img_{exp_time}.png",show_full_index=False)
-    #             print(f"Finished. Final graph saved to ims/ACDC_img_{exp_time}.png")
-    #         except Exception as e:
-    #             print(f"Finished, but could not save final graph image due to: {e}")
-    #
-    #         if os.path.exists("acdc_checkpoint.pt"):
-    #             os.remove("acdc_checkpoint.pt")
-    #         break
+    # ---------------------------------------------------------
+    # RESUME LOGIC
+    # ---------------------------------------------------------
+    start_epoch = load_custom_checkpoint(exp)
+
+    print("\nStarting ACDC Loop...")
+    exp_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    last_edge_count = exp.count_no_edges()
+
+    # ---------------------------------------------------------
+    # EMERGENCY SHUTDOWN SIGNAL HANDLER
+    # ---------------------------------------------------------
+    global current_loop_epoch
+    current_loop_epoch = start_epoch
+
+    def handle_sigterm(signum, frame):
+        print(
+            f"\n[WARNING] Received SLURM termination signal (Timeout approaching). Saving emergency checkpoint at epoch {current_loop_epoch}...")
+        save_custom_checkpoint(exp, current_loop_epoch)
+        print("Exiting gracefully. Run me again to resume!")
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, handle_sigterm)
+    print("Ready to enter main loop")
+    for i in range(start_epoch, args.max_num_epochs):
+        print("Start of main loop:")
+        print("Epoch:", i)
+        current_loop_epoch = i
+
+        exp.step(testing=False)
+        current_edge_count = exp.count_no_edges()
+
+        if current_edge_count < last_edge_count:
+            last_edge_count = current_edge_count
+
+        print(f"Epoch {i} | Edges remaining: {current_edge_count}")
+
+        if i % 100 == 0 and i > 0:
+            save_custom_checkpoint(exp, i)
+
+        if exp.current_node is None or args.single_step:
+            try:
+                show(exp.corr, f"ims/ACDC_img_{exp_time}.png",show_full_index=False)
+                print(f"Finished. Final graph saved to ims/ACDC_img_{exp_time}.png")
+            except Exception as e:
+                print(f"Finished, but could not save final graph image due to: {e}")
+
+            if os.path.exists("acdc_checkpoint.pt"):
+                os.remove("acdc_checkpoint.pt")
+            break
 
     if args.using_wandb:
         edges_fname = f"edges.pth"
@@ -454,6 +454,34 @@ def main():
         wandb.finish()
 
     #exp.save_subgraph(return_it=True)
+    active_nodes = [n for n in exp.corr.nodes() if len(n.parents) > 0 or len(n.children) > 0]
+
+    print(f"--- List of {len(active_nodes)} active nodes ---\n")
+
+    for n in active_nodes:
+        print(f"Node: {n.name} | Index: {n.index.hashable_tuple}")
+
+        if len(n.parents) > 0:
+            print("  <-- Parents (Receives input from):")
+            for parent in n.parents:
+                print(f"      - {parent.name} | Index: {parent.index.hashable_tuple}")
+        else:
+            print("  <-- Parents: None")
+
+        if len(n.children) > 0:
+            print("  --> Children (Sends output to):")
+            for child in n.children:
+                print(f"      - {child.name} | Index: {child.index.hashable_tuple}")
+        else:
+            print("  --> Children: None")
+
+        print("-" * 60)
+    active_nodes = [n for n in exp.corr.nodes() if len(n.parents) > 0 or len(n.children) > 0]
+
+    print(f"--- List of {len(active_nodes)} active nodes ---")
+
+    for n in active_nodes:
+        print(f"Node: {n.name} | Index: {n.index.hashable_tuple}")
 
 
 if __name__ == "__main__":
