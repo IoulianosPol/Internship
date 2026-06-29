@@ -263,8 +263,8 @@ def parse_args():
     parser.add_argument("--abs-value-threshold", action='store_true')
 
     args = parser.parse_args(
-        [line.strip() for line in r"""--task=docstring\
---threshold=0.095\
+        [line.strip() for line in r"""--task=induction\
+--threshold=0.5623\
 --indices-mode=reverse\
 --first-cache-cpu=False\
 --second-cache-cpu=False\
